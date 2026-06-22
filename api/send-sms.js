@@ -1,10 +1,12 @@
 import { getSupabase } from './_lib/supabase.js'
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
+import { requireUser } from './_lib/auth.js'
 import { renderTemplate, sendSms } from './_lib/sms.js'
 
 // POST { orderId } – henter ordre + indstillinger, sender SMS via GatewayAPI,
 // og markerer ordren som sendt. Skabelon/nummer læses server-side, ikke fra klienten.
 export default withErrors(async (req, res) => {
+  await requireUser(req, res)
   if (req.method !== 'POST') throw httpError(405, `Metode ${req.method} ikke tilladt`)
 
   const { orderId } = await readJson(req)

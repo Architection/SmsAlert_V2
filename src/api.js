@@ -1,14 +1,27 @@
 async function req(path, options = {}) {
   const res = await fetch(path, {
+    credentials: 'same-origin', // send/modtag session-cookies
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })
   const data = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(data?.error || `Fejl (${res.status})`)
+  if (!res.ok) {
+    const err = new Error(data?.error || `Fejl (${res.status})`)
+    err.status = res.status
+    throw err
+  }
   return data
 }
 
 export const api = {
+  auth: {
+    me: () => req('/api/auth?action=me'),
+    login: (email, password) =>
+      req('/api/auth?action=login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    signup: (email, password) =>
+      req('/api/auth?action=signup', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    logout: () => req('/api/auth?action=logout', { method: 'POST' }),
+  },
   activeOrders: () => req('/api/orders?view=active'),
   historyOrders: () => req('/api/orders?view=history'),
   order: (id) => req(`/api/orders?id=${encodeURIComponent(id)}`),

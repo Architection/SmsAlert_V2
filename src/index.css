@@ -599,6 +599,69 @@ button,
   font-weight: 700;
 }
 
+/* ---------- Auth (login / opret bruger) ---------- */
+.auth-screen {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  background: var(--bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-card .brand {
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.6rem;
+}
+
+.auth-alt {
+  text-align: center;
+  margin: 1.25rem 0 0;
+  color: var(--muted);
+}
+
+.auth-alt a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-alt a:hover {
+  text-decoration: underline;
+}
+
+.auth-loading {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+/* Brugerinfo + log ud i topbaren */
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar-user .user-email {
+  color: var(--muted);
+  font-size: 0.95rem;
+  max-width: 18ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- Modal ---------- */
 .modal-overlay {
   position: fixed;

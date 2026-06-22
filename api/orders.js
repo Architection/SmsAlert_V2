@@ -1,5 +1,6 @@
 import { getSupabase } from './_lib/supabase.js'
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
+import { requireUser } from './_lib/auth.js'
 import { copenhagenDayStartISO } from './_lib/time.js'
 import { toMsisdn } from './_lib/sms.js'
 
@@ -104,6 +105,7 @@ async function remove(req, res) {
 }
 
 export default withErrors(async (req, res) => {
+  await requireUser(req, res)
   switch (req.method) {
     case 'GET':
       return list(req, res)

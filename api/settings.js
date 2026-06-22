@@ -1,5 +1,6 @@
 import { getSupabase } from './_lib/supabase.js'
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
+import { requireUser } from './_lib/auth.js'
 
 async function get(req, res) {
   const { data, error } = await getSupabase()
@@ -36,6 +37,7 @@ async function put(req, res) {
 }
 
 export default withErrors(async (req, res) => {
+  await requireUser(req, res)
   switch (req.method) {
     case 'GET':
       return get(req, res)
