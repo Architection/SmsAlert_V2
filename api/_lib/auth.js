@@ -75,26 +75,6 @@ export async function signInWithPassword(res, email, password) {
   return data.user
 }
 
-// Opret en straks-bekræftet bruger via service-role admin-API'et (ingen e-mailbekræftelse nødvendig).
-export async function createUser(email, password) {
-  const { data, error } = await authClient().auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  })
-  if (error) {
-    const dup = /already|exist|registered/i.test(error.message)
-    throw httpError(dup ? 409 : 400, dup ? 'Der findes allerede en bruger med denne e-mail' : error.message)
-  }
-  return data.user
-}
-
-export async function hasAnyUser() {
-  const { data, error } = await authClient().auth.admin.listUsers({ page: 1, perPage: 1 })
-  if (error) throw httpError(500, error.message)
-  return data.users.length > 0
-}
-
 // Slår den aktuelle bruger op ud fra cookies. Forsøger refresh hvis access-token er udløbet.
 // Returnerer null hvis ikke logget ind (kaster ikke).
 export async function getAuthedUser(req, res) {

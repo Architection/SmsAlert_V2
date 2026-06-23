@@ -12,8 +12,8 @@ export function toMsisdn(input, countryCode = process.env.DEFAULT_COUNTRY_CODE |
   return Number(s)
 }
 
-// Indsæt værdier i SMS-skabelonen. Pladsholdere: {minutter} {tid} {navn}
-export function renderTemplate(template, { leadMinutes, readyAt, name } = {}) {
+// Indsæt værdier i SMS-skabelonen. Pladsholdere: {minutter} {tid} {navn} {ordreno}
+export function renderTemplate(template, { leadMinutes, readyAt, name, orderNo } = {}) {
   const tid = readyAt
     ? new Intl.DateTimeFormat('da-DK', {
         hour: '2-digit',
@@ -25,6 +25,7 @@ export function renderTemplate(template, { leadMinutes, readyAt, name } = {}) {
     .replace(/\{minutter\}/g, leadMinutes ?? '')
     .replace(/\{tid\}/g, tid)
     .replace(/\{navn\}/g, name || '')
+    .replace(/\{ordreno\}/g, orderNo ?? '')
     .replace(/\s{2,}/g, ' ') // ryd op hvis {navn} var tomt
     .trim()
 }

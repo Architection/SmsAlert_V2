@@ -18,8 +18,6 @@ export const api = {
     me: () => req('/api/auth?action=me'),
     login: (email, password) =>
       req('/api/auth?action=login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-    signup: (email, password) =>
-      req('/api/auth?action=signup', { method: 'POST', body: JSON.stringify({ email, password }) }),
     logout: () => req('/api/auth?action=logout', { method: 'POST' }),
   },
   activeOrders: () => req('/api/orders?view=active'),

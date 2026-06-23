@@ -25,6 +25,11 @@ async function put(req, res) {
     if (s.length > 11) throw httpError(400, 'Afsendernavn må højst være 11 tegn')
     patch.sender_name = s
   }
+  if (body.next_order_no !== undefined) {
+    const n = Number(body.next_order_no)
+    if (!Number.isInteger(n) || n < 1) throw httpError(400, 'Næste ordrenummer skal være et helt tal på mindst 1')
+    patch.next_order_no = n
+  }
 
   const { data, error } = await getSupabase()
     .from('settings')

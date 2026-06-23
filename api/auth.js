@@ -1,11 +1,5 @@
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
-import {
-  signInWithPassword,
-  createUser,
-  hasAnyUser,
-  getAuthedUser,
-  clearSessionCookies,
-} from './_lib/auth.js'
+import { signInWithPassword, getAuthedUser, clearSessionCookies } from './_lib/auth.js'
 
 function publicUser(user) {
   return user ? { id: user.id, email: user.email } : null
@@ -23,20 +17,6 @@ async function login(req, res) {
   const { email, password } = readCredentials(await readJson(req))
   const user = await signInWithPassword(res, email, password)
   return sendJson(res, 200, { user: publicUser(user) })
-}
-
-async function signup(req, res) {
-  const { email, password } = readCredentials(await readJson(req))
-
-  // Åben oprettelse kun når der endnu ikke findes nogen bruger (bootstrap af første konto).
-  // Derefter kræves en aktiv login – en bruger opretter en kollega.
-  const requester = await getAuthedUser(req, res)
-  if (!requester && (await hasAnyUser())) {
-    throw httpError(403, 'Log ind for at oprette nye brugere')
-  }
-
-  const user = await createUser(email, password)
-  return sendJson(res, 201, { user: publicUser(user) })
 }
 
 async function me(req, res) {
@@ -59,9 +39,6 @@ export default withErrors(async (req, res) => {
     case 'login':
       requirePost(req)
       return login(req, res)
-    case 'signup':
-      requirePost(req)
-      return signup(req, res)
     case 'logout':
       requirePost(req)
       return logout(req, res)

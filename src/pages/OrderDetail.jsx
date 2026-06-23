@@ -52,6 +52,12 @@ export default function OrderDetail() {
         </div>
 
         <dl className="detail-grid">
+          {order.order_no != null && (
+            <div>
+              <dt>Ordrenummer</dt>
+              <dd>#{order.order_no}</dd>
+            </div>
+          )}
           <div>
             <dt>Mobilnummer</dt>
             <dd>{order.phone}</dd>

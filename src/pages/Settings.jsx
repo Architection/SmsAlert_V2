@@ -6,11 +6,13 @@ const PLACEHOLDERS = [
   { tag: '{minutter}', desc: 'antal minutter før færdig' },
   { tag: '{tid}', desc: 'aftalt færdig-tidspunkt (kl.)' },
   { tag: '{navn}', desc: 'navn/note på ordren' },
+  { tag: '{ordreno}', desc: 'ordrens fortløbende nummer' },
 ]
 
 export default function Settings() {
   const [template, setTemplate] = useState('')
   const [sender, setSender] = useState('')
+  const [nextOrderNo, setNextOrderNo] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -22,6 +24,7 @@ export default function Settings() {
       .then((s) => {
         setTemplate(s.sms_template)
         setSender(s.sender_name)
+        setNextOrderNo(s.next_order_no ?? 1)
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -33,8 +36,9 @@ export default function Settings() {
         leadMinutes: 10,
         readyAt: new Date(Date.now() + 30 * 60_000).toISOString(),
         name: 'Anna',
+        orderNo: nextOrderNo || 1,
       }),
-    [template],
+    [template, nextOrderNo],
   )
 
   async function save(e) {
@@ -43,7 +47,11 @@ export default function Settings() {
     setError(null)
     setSaved(false)
     try {
-      await api.saveSettings({ sms_template: template, sender_name: sender })
+      await api.saveSettings({
+        sms_template: template,
+        sender_name: sender,
+        next_order_no: Number(nextOrderNo),
+      })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (e2) {
@@ -79,6 +87,19 @@ export default function Settings() {
             onChange={(e) => setTemplate(e.target.value)}
             required
           />
+        </label>
+
+        <label className="field">
+          <span>Næste ordrenummer</span>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={nextOrderNo}
+            onChange={(e) => setNextOrderNo(e.target.value)}
+            required
+          />
+          <span className="muted">Nummeret den næste nye ordre får. Tæller automatisk én op for hver ordre.</span>
         </label>
 
         <div className="placeholder-help">

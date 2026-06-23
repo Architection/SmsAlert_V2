@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../lib/auth-context.js'
 
 const links = [
-  { to: '/', label: 'Aktive ordrer', end: true },
+  { to: '/', label: 'Ordre', end: true },
   { to: '/historik', label: 'Historik' },
   { to: '/indstillinger', label: 'Indstillinger' },
 ]

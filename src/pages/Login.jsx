@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth-context.js'
 
 export default function Login() {
@@ -66,10 +66,6 @@ export default function Login() {
             {busy ? 'Logger ind…' : 'Log ind'}
           </button>
         </form>
-
-        <p className="auth-alt">
-          Ingen konto? <Link to="/opret-bruger">Opret bruger</Link>
-        </p>
       </div>
     </div>
   )

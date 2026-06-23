@@ -51,9 +51,16 @@ async function create(req, res) {
   if (!Number.isFinite(leadMinutes) || leadMinutes < 0)
     throw httpError(400, 'Ugyldigt antal minutter')
 
-  const { data, error } = await getSupabase()
+  const sb = getSupabase()
+
+  // Tildel det næste fortløbende ordrenummer atomisk (ruller tælleren én frem).
+  const { data: orderNo, error: nErr } = await sb.rpc('next_order_number')
+  if (nErr) throw httpError(500, 'Kunne ikke tildele ordrenummer: ' + nErr.message)
+
+  const { data, error } = await sb
     .from('orders')
     .insert({
+      order_no: orderNo,
       phone,
       name: (body.name || '').trim() || null,
       lead_minutes: Math.round(leadMinutes),

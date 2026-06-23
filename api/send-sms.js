@@ -31,6 +31,7 @@ export default withErrors(async (req, res) => {
     leadMinutes: order.lead_minutes,
     readyAt: order.ready_at,
     name: order.name,
+    orderNo: order.order_no,
   })
 
   const result = await sendSms({

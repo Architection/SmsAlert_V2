@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import {
   formatClock,
@@ -18,6 +18,7 @@ export default function ActiveOrders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [now, setNow] = useState(Date.now())
+  const [formOpen, setFormOpen] = useState(false)
 
   // Tikker for nedtælling + periodisk genindlæsning.
   useEffect(() => {
@@ -45,13 +46,16 @@ export default function ActiveOrders() {
   }, [])
 
   return (
-    <div className="stack active-layout">
-      <NewOrderForm onCreated={(o) => setOrders((cur) => sortOrders([o, ...cur]))} />
-
+    <div className="stack">
       <section>
-        <h1 className="page-title">
-          Aktive ordrer {orders.length > 0 && <span className="badge">{orders.length}</span>}
-        </h1>
+        <div className="page-head">
+          <h1 className="page-title">
+            Ordre {orders.length > 0 && <span className="badge">{orders.length}</span>}
+          </h1>
+          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+            + Ny ordre
+          </button>
+        </div>
 
         {error && <p className="error-banner">⚠️ {error}</p>}
         {loading && <p className="muted">Indlæser…</p>}
@@ -71,6 +75,15 @@ export default function ActiveOrders() {
           ))}
         </div>
       </section>
+
+      <NewOrderModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onCreated={(o) => {
+          setOrders((cur) => sortOrders([o, ...cur]))
+          setFormOpen(false)
+        }}
+      />
     </div>
   )
 }
@@ -79,14 +92,23 @@ function sortOrders(list) {
   return [...list].sort((a, b) => new Date(a.ready_at) - new Date(b.ready_at))
 }
 
-function NewOrderForm({ onCreated }) {
+function NewOrderModal({ open, onClose, onCreated }) {
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [lead, setLead] = useState(10)
   const [readyTime, setReadyTime] = useState(() => clockFromNowPlus(30))
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
-  const phoneRef = useRef(null)
+
+  // Nulstil felterne hver gang dialogen åbnes.
+  useEffect(() => {
+    if (!open) return
+    setPhone('')
+    setName('')
+    setLead(10)
+    setReadyTime(clockFromNowPlus(30))
+    setErr(null)
+  }, [open])
 
   async function submit(e) {
     e.preventDefault()
@@ -100,11 +122,6 @@ function NewOrderForm({ onCreated }) {
         ready_at: clockToIsoToday(readyTime),
       })
       onCreated(order)
-      setPhone('')
-      setName('')
-      setLead(10)
-      setReadyTime(clockFromNowPlus(30))
-      phoneRef.current?.focus()
     } catch (e2) {
       setErr(e2.message)
     } finally {
@@ -113,73 +130,84 @@ function NewOrderForm({ onCreated }) {
   }
 
   return (
-    <form className="card new-order" onSubmit={submit}>
-      <h2 className="card-title">Ny ordre</h2>
-      <div className="form-grid">
-        <label className="field">
-          <span>Mobilnummer</span>
-          <input
-            ref={phoneRef}
-            type="tel"
-            inputMode="tel"
-            placeholder="12 34 56 78"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-          />
-        </label>
+    <Modal
+      open={open}
+      onClose={() => !saving && onClose()}
+      title="Ny ordre"
+      footer={
+        <>
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
+            Fortryd
+          </button>
+          <button type="submit" form="new-order-form" className="btn btn-primary" disabled={saving}>
+            {saving ? 'Tilføjer…' : 'Tilføj ordre'}
+          </button>
+        </>
+      }
+    >
+      <form id="new-order-form" onSubmit={submit}>
+        <div className="form-grid">
+          <label className="field">
+            <span>Mobilnummer</span>
+            <input
+              autoFocus
+              type="tel"
+              inputMode="tel"
+              placeholder="12 34 56 78"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+          </label>
 
-        <label className="field">
-          <span>Navn / note (valgfri)</span>
-          <input
-            type="text"
-            placeholder="fx Burger-menu, Anna"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
+          <label className="field">
+            <span>Navn / note (valgfri)</span>
+            <input
+              type="text"
+              placeholder="fx Burger-menu, Anna"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
 
-        <label className="field">
-          <span>SMS sendes (min. før færdig)</span>
-          <input
-            type="number"
-            min="0"
-            max="180"
-            value={lead}
-            onChange={(e) => setLead(e.target.value)}
-            required
-          />
-        </label>
+          <label className="field">
+            <span>SMS sendes (min. før færdig)</span>
+            <input
+              type="number"
+              min="0"
+              max="180"
+              value={lead}
+              onChange={(e) => setLead(e.target.value)}
+              required
+            />
+          </label>
 
-        <label className="field">
-          <span>Færdig ca. kl.</span>
-          <input
-            type="time"
-            value={readyTime}
-            onChange={(e) => setReadyTime(e.target.value)}
-            required
-          />
-          <div className="quick-row">
-            {[15, 30, 45, 60].map((m) => (
-              <button
-                key={m}
-                type="button"
-                className="chip"
-                onClick={() => setReadyTime(clockFromNowPlus(m))}
-              >
-                +{m} min
-              </button>
-            ))}
-          </div>
-        </label>
-      </div>
+          <label className="field">
+            <span>Færdig ca. kl.</span>
+            <input
+              type="time"
+              value={readyTime}
+              onChange={(e) => setReadyTime(e.target.value)}
+              required
+            />
+            <div className="quick-row">
+              {[15, 30, 45, 60].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className="chip"
+                  onClick={() => setReadyTime(clockFromNowPlus(m))}
+                >
+                  +{m} min
+                </button>
+              ))}
+            </div>
+          </label>
+        </div>
 
-      {err && <p className="error-banner">⚠️ {err}</p>}
-
-      <button type="submit" className="btn btn-primary btn-lg" disabled={saving}>
-        {saving ? 'Tilføjer…' : 'Tilføj ordre'}
-      </button>
-    </form>
+        {err && <p className="error-banner">⚠️ {err}</p>}
+      </form>
+    </Modal>
   )
 }
 
@@ -199,6 +227,7 @@ function OrderRow({ order, now, template, onChanged }) {
     leadMinutes: order.lead_minutes,
     readyAt: order.ready_at,
     name: order.name,
+    orderNo: order.order_no,
   })
 
   async function doSend() {
@@ -230,7 +259,10 @@ function OrderRow({ order, now, template, onChanged }) {
   return (
     <div className={`card order-row state-${state}`}>
       <div className="order-info">
-        <div className="order-name">{order.name || 'Ordre'}</div>
+        <div className="order-name">
+          {order.order_no != null && <span className="order-no">#{order.order_no}</span>}
+          {order.name || 'Ordre'}
+        </div>
         <div className="order-phone">{order.phone}</div>
         <div className="order-meta">
           Klar kl. <strong>{formatClock(order.ready_at)}</strong> · SMS {order.lead_minutes} min før

@@ -22,7 +22,7 @@
   color-scheme: dark;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 18px; /* larger base for tablet readability */
+  font-size: 15px; /* compact base; whole UI scales from this rem unit */
   color: var(--text);
 }
 
@@ -131,7 +131,7 @@ button,
   border-radius: 999px;
   font-weight: 600;
   font-size: 1rem;
-  min-height: 48px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   transition: background 0.15s, color 0.15s;
@@ -169,6 +169,18 @@ button,
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.page-head .page-title {
+  margin: 0;
 }
 
 .subhead {
@@ -229,7 +241,7 @@ button,
   border: 1px solid transparent;
   border-radius: 12px;
   padding: 0.8rem 1.3rem;
-  min-height: 52px;
+  min-height: 46px;
   font-weight: 600;
   font-size: 1.05rem;
   cursor: pointer;
@@ -269,14 +281,14 @@ button,
 
 .btn-lg {
   padding: 1rem 1.4rem;
-  min-height: 60px;
+  min-height: 52px;
   font-size: 1.15rem;
   width: 100%;
 }
 
 .btn-sm {
   padding: 0.5rem 0.9rem;
-  min-height: 44px;
+  min-height: 40px;
   font-size: 0.95rem;
 }
 
@@ -290,7 +302,7 @@ button,
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   padding: 0.5rem 0.95rem;
-  min-height: 44px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   font-size: 0.95rem;
@@ -327,7 +339,7 @@ button,
   border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 0.8rem 0.95rem;
-  min-height: 56px;
+  min-height: 48px;
   background: var(--surface-2);
   color: var(--text);
   width: 100%;
@@ -356,25 +368,6 @@ button,
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.4rem;
-}
-
-.new-order .btn-lg {
-  margin-top: 1.25rem;
-}
-
-/* ---------- Active orders layout (tablet landscape) ---------- */
-@media (min-width: 900px) {
-  .active-layout {
-    display: grid;
-    grid-template-columns: minmax(340px, 400px) 1fr;
-    gap: 1.75rem;
-    align-items: start;
-  }
-
-  .active-layout .new-order {
-    position: sticky;
-    top: 6rem;
-  }
 }
 
 /* ---------- Order list ---------- */
@@ -418,6 +411,18 @@ button,
 .order-name {
   font-weight: 700;
   font-size: 1.25rem;
+}
+
+.order-no {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 0.4rem;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .order-phone {
