@@ -689,6 +689,10 @@ button,
   gap: 0.75rem;
 }
 
+.install-btn {
+  white-space: nowrap;
+}
+
 .topbar-user .user-email {
   color: var(--muted);
   font-size: 0.95rem;
@@ -750,5 +754,93 @@ button,
   }
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Kampagne ---------- */
+.sync-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+.sync-when {
+  font-size: 0.85rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.stat {
+  padding: 1.2rem 1.4rem;
+  text-align: left;
+}
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-label {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.data-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.data-table .mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.filter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.result-count {
+  margin: 0.9rem 0 0.4rem;
+}
+
+@media (max-width: 760px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .filter-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

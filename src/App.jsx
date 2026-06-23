@@ -6,6 +6,7 @@ import ActiveOrders from './pages/ActiveOrders.jsx'
 import History from './pages/History.jsx'
 import OrderDetail from './pages/OrderDetail.jsx'
 import Settings from './pages/Settings.jsx'
+import Campaign from './pages/Campaign.jsx'
 
 function ProtectedRoute() {
   const { user, loading } = useAuth()
@@ -25,6 +26,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<ActiveOrders />} />
           <Route path="/historik" element={<History />} />
+          <Route path="/kampagne" element={<Campaign />} />
           <Route path="/ordre/:id" element={<OrderDetail />} />
           <Route path="/indstillinger" element={<Settings />} />
           <Route path="*" element={<ActiveOrders />} />

@@ -10,15 +10,15 @@
     </linearGradient>
   </defs>
 
-  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
-  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="#ffffff" opacity="0.06"/>
+  <!-- Fuldt udfald til maskable (indhold holdes i den centrale sikre zone) -->
+  <rect x="0" y="0" width="512" height="512" fill="url(#bg)"/>
 
-  <!-- Notifikations-klokke (Material bell), centreret -->
-  <g transform="translate(256 252) scale(11) translate(-12 -12)">
+  <!-- Notifikations-klokke, lidt mindre så den ligger i sikker zone -->
+  <g transform="translate(256 256) scale(9) translate(-12 -12)">
     <path fill="url(#bell)" d="M12 22a2.4 2.4 0 0 0 2.4-2.4H9.6A2.4 2.4 0 0 0 12 22zm7-6.3V11c0-3.36-1.79-6.17-4.9-6.92V3.5a2.1 2.1 0 0 0-4.2 0v.58C6.8 4.83 5 7.63 5 11v4.7l-1.8 1.8a1 1 0 0 0 .7 1.7h16.2a1 1 0 0 0 .7-1.7L19 15.7z"/>
   </g>
 
   <!-- Alert-badge -->
-  <circle cx="338" cy="170" r="50" fill="#2563eb"/>
-  <circle cx="338" cy="170" r="38" fill="#f43f5e"/>
+  <circle cx="324" cy="186" r="44" fill="#2563eb"/>
+  <circle cx="324" cy="186" r="33" fill="#f43f5e"/>
 </svg>

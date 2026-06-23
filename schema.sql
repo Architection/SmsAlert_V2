@@ -60,3 +60,81 @@ values (
   'Restaurant'
 )
 on conflict (id) do nothing;
+
+-- SMS-arkiv (Kampagne) -------------------------------------------------
+-- Lille, selvstændig tabel kun til marketing: numre + bestillingsdato.
+-- Helt adskilt fra public.orders, så ordrer kan slettes uden at miste
+-- marketing-datagrundlaget. Fyldes fra (a) engangs-import af det gamle
+-- system og (b) "Hent seneste ordrer"-knappen der trækker fra orders.
+create table if not exists public.sms_archive (
+  id          bigint generated always as identity primary key,
+  phone       text not null,                 -- normaliseret msisdn, fx 4540184636
+  ordered_at  timestamptz not null,          -- hvornår bestillingen blev oprettet
+  source      text not null default 'orders' -- 'import' (gammelt system) | 'orders' (live)
+                check (source in ('import','orders')),
+  created_at  timestamptz not null default now() -- hvornår rækken kom i arkivet
+);
+
+-- Samme nummer + samme bestillingstidspunkt = samme bestilling. Gør både
+-- engangs-import og gentagne "hent seneste" idempotente (on conflict do nothing).
+create unique index if not exists sms_archive_phone_ordered_idx
+  on public.sms_archive (phone, ordered_at);
+create index if not exists sms_archive_phone_idx      on public.sms_archive (phone);
+create index if not exists sms_archive_ordered_at_idx on public.sms_archive (ordered_at);
+
+-- Hvornår "Hent seneste ordrer" sidst blev kørt (vises på Kampagne-siden).
+alter table public.settings add column if not exists archive_last_sync_at timestamptz;
+
+-- Nøgletal til Kampagne-siden i ét kald.
+create or replace function public.campaign_summary()
+returns json
+language sql
+stable
+as $$
+  select json_build_object(
+    'total_rows',      (select count(*) from public.sms_archive),
+    'unique_numbers',  (select count(distinct phone) from public.sms_archive),
+    'last_7_days',     (select count(*) from public.sms_archive where ordered_at >= now() - interval '7 days'),
+    'last_30_days',    (select count(*) from public.sms_archive where ordered_at >= now() - interval '30 days'),
+    'first_order',     (select min(ordered_at) from public.sms_archive),
+    'last_order',      (select max(ordered_at) from public.sms_archive),
+    'top_numbers',     (select coalesce(json_agg(t), '[]'::json) from (
+                          select phone, count(*) as orders, max(ordered_at) as last_order
+                          from public.sms_archive
+                          group by phone
+                          order by count(*) desc, max(ordered_at) desc
+                          limit 10
+                        ) t)
+  );
+$$;
+
+-- Unikke numre, aggregeret, med valgfri filtre. Bruges til både visning og CSV-eksport.
+create or replace function public.campaign_numbers(
+  p_from       timestamptz default null,
+  p_to         timestamptz default null,
+  p_min_orders integer     default 1,
+  p_q          text        default null,
+  p_limit      integer     default 1000
+)
+returns table (
+  phone       text,
+  orders      bigint,
+  first_order timestamptz,
+  last_order  timestamptz
+)
+language sql
+stable
+as $$
+  select phone,
+         count(*)        as orders,
+         min(ordered_at) as first_order,
+         max(ordered_at) as last_order
+  from public.sms_archive
+  where (p_from is null or ordered_at >= p_from)
+    and (p_to   is null or ordered_at <= p_to)
+    and (p_q    is null or phone like '%' || p_q || '%')
+  group by phone
+  having count(*) >= coalesce(p_min_orders, 1)
+  order by orders desc, last_order desc
+  limit coalesce(p_limit, 1000);
+$$;

@@ -11,6 +11,16 @@ export function formatClock(iso) {
   }).format(new Date(iso))
 }
 
+export function formatDate(iso) {
+  if (!iso) return '–'
+  return new Intl.DateTimeFormat('da-DK', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: TZ,
+  }).format(new Date(iso))
+}
+
 export function formatDateTime(iso) {
   if (!iso) return '–'
   return new Intl.DateTimeFormat('da-DK', {

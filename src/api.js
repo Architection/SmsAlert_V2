@@ -32,4 +32,15 @@ export const api = {
   saveSettings: (body) => req('/api/settings', { method: 'PUT', body: JSON.stringify(body) }),
   sendSms: (orderId) =>
     req('/api/send-sms', { method: 'POST', body: JSON.stringify({ orderId }) }),
+  campaign: {
+    summary: () => req('/api/campaign?action=summary'),
+    numbers: (params = {}) => {
+      const qs = new URLSearchParams({ action: 'numbers' })
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null && v !== '') qs.set(k, v)
+      }
+      return req(`/api/campaign?${qs}`)
+    },
+    sync: () => req('/api/campaign', { method: 'POST' }),
+  },
 }
