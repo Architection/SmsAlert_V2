@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { formatClock, formatDateTime } from '../lib/time.js'
+import Modal from '../components/Modal.jsx'
 
 const STATUS_TEXT = {
   active: 'Aktiv',
@@ -16,6 +17,8 @@ export default function OrderDetail() {
   const [order, setOrder] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [delOpen, setDelOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     api
@@ -26,12 +29,13 @@ export default function OrderDetail() {
   }, [id])
 
   async function remove() {
-    if (!window.confirm('Slet denne ordre permanent?')) return
+    setDeleting(true)
     try {
       await api.deleteOrder(id)
       navigate('/historik')
     } catch (e) {
       setError(e.message)
+      setDeleting(false)
     }
   }
 
@@ -88,9 +92,32 @@ export default function OrderDetail() {
         )}
       </div>
 
-      <button className="btn btn-ghost btn-sm danger" onClick={remove}>
+      <button className="btn btn-ghost btn-sm danger" onClick={() => setDelOpen(true)}>
         Slet ordre
       </button>
+
+      <Modal
+        open={delOpen}
+        onClose={() => !deleting && setDelOpen(false)}
+        title="Slet ordre?"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setDelOpen(false)} disabled={deleting}>
+              Fortryd
+            </button>
+            <button className="btn btn-danger" onClick={remove} disabled={deleting}>
+              {deleting ? 'Sletter…' : 'Ja, slet ordre'}
+            </button>
+          </>
+        }
+      >
+        <p className="confirm-to">
+          Slet{' '}
+          {order.order_no != null && <strong>#{order.order_no} </strong>}
+          <strong>{order.name || 'ordre'}</strong> til <strong>{order.phone}</strong> permanent?
+        </p>
+        <p className="muted">Handlingen kan ikke fortrydes.</p>
+      </Modal>
     </div>
   )
 }

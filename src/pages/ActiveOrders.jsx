@@ -12,8 +12,16 @@ import Modal from '../components/Modal.jsx'
 
 const POLL_MS = 8000
 
+const STATUS_LABEL = {
+  sent: { text: 'SMS sendt', cls: 'tag-sent' },
+  done: { text: 'Færdig', cls: 'tag-done' },
+  cancelled: { text: 'Annulleret', cls: 'tag-cancelled' },
+  active: { text: 'Aktiv', cls: 'tag-active' },
+}
+
 export default function ActiveOrders() {
   const [orders, setOrders] = useState([])
+  const [doneToday, setDoneToday] = useState([])
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -28,8 +36,12 @@ export default function ActiveOrders() {
 
   async function load() {
     try {
-      const data = await api.activeOrders()
-      setOrders(data)
+      const [active, history] = await Promise.all([
+        api.activeOrders(),
+        api.historyOrders(),
+      ])
+      setOrders(active)
+      setDoneToday(history)
       setError(null)
     } catch (e) {
       setError(e.message)
@@ -75,6 +87,19 @@ export default function ActiveOrders() {
           ))}
         </div>
       </section>
+
+      {doneToday.length > 0 && (
+        <section>
+          <h2 className="section-title">
+            Afsluttede i dag <span className="badge badge-muted">{doneToday.length}</span>
+          </h2>
+          <div className="order-list">
+            {doneToday.map((o) => (
+              <DoneRow key={o.id} order={o} onChanged={load} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <NewOrderModal
         open={formOpen}
@@ -216,6 +241,7 @@ function OrderRow({ order, now, template, onChanged }) {
   const [sending, setSending] = useState(false)
   const [err, setErr] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [delOpen, setDelOpen] = useState(false)
 
   const sendAt = sendAtMs(order)
   const remaining = sendAt - now
@@ -290,6 +316,13 @@ function OrderRow({ order, now, template, onChanged }) {
         <button className="btn btn-ghost btn-sm" onClick={cancel} disabled={busy}>
           Annullér
         </button>
+        <button
+          className="btn btn-ghost btn-sm danger"
+          onClick={() => setDelOpen(true)}
+          disabled={busy}
+        >
+          Slet
+        </button>
       </div>
 
       <Modal
@@ -313,6 +346,103 @@ function OrderRow({ order, now, template, onChanged }) {
         <div className="sms-preview">{preview || <em className="muted">(tom besked)</em>}</div>
         {err && <p className="error-banner">⚠️ {err}</p>}
       </Modal>
+
+      <DeleteOrderModal
+        order={order}
+        open={delOpen}
+        onClose={() => setDelOpen(false)}
+        onDeleted={() => {
+          setDelOpen(false)
+          onChanged()
+        }}
+      />
     </div>
+  )
+}
+
+function DoneRow({ order, onChanged }) {
+  const [delOpen, setDelOpen] = useState(false)
+  const tag = STATUS_LABEL[order.status] || STATUS_LABEL.done
+
+  return (
+    <div className="card order-row done-row state-done">
+      <div className="order-info">
+        <div className="order-name">
+          {order.order_no != null && <span className="order-no">#{order.order_no}</span>}
+          {order.name || 'Ordre'}
+        </div>
+        <div className="order-phone">{order.phone}</div>
+        <div className="order-meta">
+          Klar kl. {formatClock(order.ready_at)}
+          {order.sms_sent_at && <> · SMS sendt kl. {formatClock(order.sms_sent_at)}</>}
+        </div>
+      </div>
+
+      <span className={`tag ${tag.cls}`}>{tag.text}</span>
+
+      <div className="order-actions">
+        <button className="btn btn-ghost btn-sm danger" onClick={() => setDelOpen(true)}>
+          Slet
+        </button>
+      </div>
+
+      <DeleteOrderModal
+        order={order}
+        open={delOpen}
+        onClose={() => setDelOpen(false)}
+        onDeleted={() => {
+          setDelOpen(false)
+          onChanged()
+        }}
+      />
+    </div>
+  )
+}
+
+function DeleteOrderModal({ order, open, onClose, onDeleted }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  // Nulstil fejl når dialogen åbnes.
+  useEffect(() => {
+    if (open) setErr(null)
+  }, [open])
+
+  async function doDelete() {
+    setBusy(true)
+    setErr(null)
+    try {
+      await api.deleteOrder(order.id)
+      onDeleted()
+    } catch (e) {
+      setErr(e.message)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={() => !busy && onClose()}
+      title="Slet ordre?"
+      footer={
+        <>
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
+            Fortryd
+          </button>
+          <button className="btn btn-danger" onClick={doDelete} disabled={busy}>
+            {busy ? 'Sletter…' : 'Ja, slet ordre'}
+          </button>
+        </>
+      }
+    >
+      <p className="confirm-to">
+        Slet{' '}
+        {order.order_no != null && <strong>#{order.order_no} </strong>}
+        <strong>{order.name || 'ordre'}</strong> til <strong>{order.phone}</strong> permanent?
+      </p>
+      <p className="muted">Handlingen kan ikke fortrydes.</p>
+      {err && <p className="error-banner">⚠️ {err}</p>}
+    </Modal>
   )
 }

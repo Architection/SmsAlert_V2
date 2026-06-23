@@ -214,6 +214,19 @@ button,
   font-weight: 700;
 }
 
+.badge-muted {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.section-title {
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .error-banner {
   background: rgba(244, 63, 94, 0.12);
   border: 1px solid rgba(244, 63, 94, 0.4);
@@ -295,6 +308,16 @@ button,
 .danger {
   color: var(--urgent);
   border-color: rgba(244, 63, 94, 0.4);
+}
+
+.btn-danger {
+  background: var(--urgent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn-danger:not(:disabled):hover {
+  background: #e11d48;
 }
 
 .chip {
@@ -383,6 +406,14 @@ button,
   align-items: center;
   gap: 1.25rem;
   border-left: 7px solid var(--border-strong);
+}
+
+.order-row.state-done {
+  border-left-color: var(--border-strong);
+}
+
+.done-row .order-name {
+  font-size: 1.1rem;
 }
 
 .order-row.state-ok {
