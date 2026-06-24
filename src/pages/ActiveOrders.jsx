@@ -131,7 +131,7 @@ function NewOrderModal({ open, onClose, onCreated }) {
     setPhone('')
     setName('')
     setLead(10)
-    setReadyTime(clockFromNowPlus(30))
+    setReadyTime(clockFromNowPlus(0))
     setErr(null)
   }, [open])
 
