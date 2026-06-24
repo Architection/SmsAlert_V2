@@ -121,7 +121,7 @@ function NewOrderModal({ open, onClose, onCreated }) {
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [lead, setLead] = useState(10)
-  const [readyTime, setReadyTime] = useState(() => clockFromNowPlus(30))
+  const [readyTime, setReadyTime] = useState(() => clockFromNowPlus(0))
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
 
@@ -216,7 +216,7 @@ function NewOrderModal({ open, onClose, onCreated }) {
               required
             />
             <div className="quick-row">
-              {[15, 30, 45, 60].map((m) => (
+              {[10, 20, 30, 40].map((m) => (
                 <button
                   key={m}
                   type="button"
