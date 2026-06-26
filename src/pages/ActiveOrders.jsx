@@ -120,7 +120,7 @@ function sortOrders(list) {
 function NewOrderModal({ open, onClose, onCreated }) {
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
-  const [lead, setLead] = useState(10)
+  const [lead, setLead] = useState(3)
   const [readyTime, setReadyTime] = useState(() => clockFromNowPlus(0))
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
@@ -130,7 +130,7 @@ function NewOrderModal({ open, onClose, onCreated }) {
     if (!open) return
     setPhone('')
     setName('')
-    setLead(10)
+    setLead(3)
     setReadyTime(clockFromNowPlus(0))
     setErr(null)
   }, [open])
