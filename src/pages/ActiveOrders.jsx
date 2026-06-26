@@ -114,7 +114,8 @@ export default function ActiveOrders() {
 }
 
 function sortOrders(list) {
-  return [...list].sort((a, b) => new Date(a.ready_at) - new Date(b.ready_at))
+  // Nyeste ordrenummer øverst.
+  return [...list].sort((a, b) => b.order_no - a.order_no)
 }
 
 function NewOrderModal({ open, onClose, onCreated }) {

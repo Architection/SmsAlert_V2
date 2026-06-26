@@ -23,14 +23,14 @@ async function list(req, res) {
   let builder = sb.from('orders').select('*')
 
   if (view === 'history') {
-    // Dagens ordrer der ikke længere er aktive.
+    // Dagens ordrer der ikke længere er aktive – nyeste ordrenummer øverst.
     builder = builder
       .gte('created_at', copenhagenDayStartISO())
       .neq('status', 'active')
-      .order('created_at', { ascending: false })
+      .order('order_no', { ascending: false })
   } else {
-    // Aktive ordrer – dem der skal sendes snarest øverst.
-    builder = builder.eq('status', 'active').order('ready_at', { ascending: true })
+    // Aktive ordrer – nyeste ordrenummer øverst.
+    builder = builder.eq('status', 'active').order('order_no', { ascending: false })
   }
 
   const { data, error } = await builder
