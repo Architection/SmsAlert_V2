@@ -440,9 +440,9 @@ function DeleteOrderModal({ order, open, onClose, onDeleted }) {
       <p className="confirm-to">
         Slet{' '}
         {order.order_no != null && <strong>#{order.order_no} </strong>}
-        <strong>{order.name || 'ordre'}</strong> til <strong>{order.phone}</strong> permanent?
+        <strong>{order.name || 'ordre'}</strong> til <strong>{order.phone}</strong>?
       </p>
-      <p className="muted">Handlingen kan ikke fortrydes.</p>
+      <p className="muted">Ordren flyttes til Historik → Slettet og kan gendannes.</p>
       {err && <p className="error-banner">⚠️ {err}</p>}
     </Modal>
   )

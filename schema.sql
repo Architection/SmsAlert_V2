@@ -13,14 +13,20 @@ create table if not exists public.orders (
                  check (status in ('active','sent','done','cancelled')),
   sms_sent_at  timestamptz,                   -- hvornår SMS faktisk blev sendt
   sms_body     text,                          -- den tekst der blev sendt
+  deleted_at   timestamptz,                   -- sat ved "sletning" (blød) – vises under Historik → Slettet
   created_at   timestamptz not null default now()
 );
 
 -- Migration for eksisterende installationer.
 alter table public.orders add column if not exists order_no integer;
 
-create index if not exists orders_status_idx     on public.orders (status);
-create index if not exists orders_created_at_idx  on public.orders (created_at);
+-- Blød sletning: "slettede" ordrer fjernes ikke, men markeres, så de kan
+-- findes igen under Historik → Slettet (og evt. gendannes).
+alter table public.orders add column if not exists deleted_at timestamptz;
+
+create index if not exists orders_status_idx      on public.orders (status);
+create index if not exists orders_created_at_idx   on public.orders (created_at);
+create index if not exists orders_deleted_at_idx   on public.orders (deleted_at);
 
 -- Indstillinger (én enkelt række) --------------------------------------
 create table if not exists public.settings (

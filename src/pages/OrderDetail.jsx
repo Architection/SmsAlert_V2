@@ -19,6 +19,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true)
   const [delOpen, setDelOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [restoring, setRestoring] = useState(false)
 
   useEffect(() => {
     api
@@ -32,10 +33,23 @@ export default function OrderDetail() {
     setDeleting(true)
     try {
       await api.deleteOrder(id)
-      navigate('/historik')
+      navigate('/historik?tab=deleted')
     } catch (e) {
       setError(e.message)
       setDeleting(false)
+    }
+  }
+
+  async function restore() {
+    setRestoring(true)
+    setError(null)
+    try {
+      const updated = await api.restoreOrder(id)
+      setOrder(updated)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setRestoring(false)
     }
   }
 
@@ -52,7 +66,10 @@ export default function OrderDetail() {
       <div className="card">
         <div className="detail-head">
           <h1 className="page-title">{order.name || 'Ordre'}</h1>
-          <span className="tag">{STATUS_TEXT[order.status] || order.status}</span>
+          <div className="detail-tags">
+            <span className="tag">{STATUS_TEXT[order.status] || order.status}</span>
+            {order.deleted_at && <span className="tag tag-deleted">Slettet</span>}
+          </div>
         </div>
 
         <dl className="detail-grid">
@@ -92,9 +109,18 @@ export default function OrderDetail() {
         )}
       </div>
 
-      <button className="btn btn-ghost btn-sm danger" onClick={() => setDelOpen(true)}>
-        Slet ordre
-      </button>
+      {order.deleted_at ? (
+        <div className="detail-actions">
+          <p className="muted">Denne ordre er slettet {formatDateTime(order.deleted_at)}.</p>
+          <button className="btn btn-ghost btn-sm" onClick={restore} disabled={restoring}>
+            {restoring ? 'Gendanner…' : 'Gendan ordre'}
+          </button>
+        </div>
+      ) : (
+        <button className="btn btn-ghost btn-sm danger" onClick={() => setDelOpen(true)}>
+          Slet ordre
+        </button>
+      )}
 
       <Modal
         open={delOpen}
@@ -114,9 +140,9 @@ export default function OrderDetail() {
         <p className="confirm-to">
           Slet{' '}
           {order.order_no != null && <strong>#{order.order_no} </strong>}
-          <strong>{order.name || 'ordre'}</strong> til <strong>{order.phone}</strong> permanent?
+          <strong>{order.name || 'ordre'}</strong> til <strong>{order.phone}</strong>?
         </p>
-        <p className="muted">Handlingen kan ikke fortrydes.</p>
+        <p className="muted">Ordren flyttes til Historik → Slettet og kan gendannes.</p>
       </Modal>
     </div>
   )

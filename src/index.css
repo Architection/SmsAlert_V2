@@ -505,6 +505,32 @@ button,
   align-items: stretch;
 }
 
+/* ---------- Sub-tabs (fx Historik) ---------- */
+.subtabs {
+  display: flex;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  margin: -0.5rem 0 0.25rem;
+}
+
+.subtab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 0.55rem 0.5rem;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.subtab.is-active {
+  color: var(--text);
+  border-bottom-color: var(--primary);
+}
+
 /* ---------- History ---------- */
 .history-row {
   display: flex;
@@ -549,6 +575,10 @@ button,
   background: rgba(59, 130, 246, 0.18);
   color: #60a5fa;
 }
+.tag-deleted {
+  background: rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+}
 
 .chevron {
   font-size: 1.6rem;
@@ -568,6 +598,20 @@ button,
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.detail-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .detail-grid {

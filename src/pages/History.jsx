@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../api.js'
-import { formatClock } from '../lib/time.js'
+import { formatClock, formatDateTime } from '../lib/time.js'
 
 const STATUS_LABEL = {
   sent: { text: 'SMS sendt', cls: 'tag-sent' },
@@ -10,39 +10,88 @@ const STATUS_LABEL = {
   active: { text: 'Aktiv', cls: 'tag-active' },
 }
 
-export default function History() {
-  const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+const TABS = [
+  { key: 'today', label: 'I dag' },
+  { key: 'deleted', label: 'Slettet' },
+]
 
+export default function History() {
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'deleted' ? 'deleted' : 'today'
+
+  const [today, setToday] = useState({ list: [], loading: true, error: null, loaded: false })
+  const [deleted, setDeleted] = useState({ list: [], loading: false, error: null, loaded: false })
+
+  // Dagens historik hentes med det samme.
   useEffect(() => {
     api
       .historyOrders()
-      .then(setOrders)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false))
+      .then((list) => setToday({ list, loading: false, error: null, loaded: true }))
+      .catch((e) => setToday({ list: [], loading: false, error: e.message, loaded: true }))
   }, [])
+
+  // Slettede ordrer hentes først når fanen åbnes.
+  useEffect(() => {
+    if (tab !== 'deleted' || deleted.loaded) return
+    setDeleted((d) => ({ ...d, loading: true }))
+    api
+      .deletedOrders()
+      .then((list) => setDeleted({ list, loading: false, error: null, loaded: true }))
+      .catch((e) => setDeleted({ list: [], loading: false, error: e.message, loaded: true }))
+  }, [tab, deleted.loaded])
+
+  const current = tab === 'deleted' ? deleted : today
 
   return (
     <div className="stack">
-      <h1 className="page-title">Dagens historik</h1>
-      {error && <p className="error-banner">⚠️ {error}</p>}
-      {loading && <p className="muted">Indlæser…</p>}
-      {!loading && orders.length === 0 && !error && (
-        <p className="empty">Ingen tidligere ordrer i dag endnu.</p>
+      <h1 className="page-title">Historik</h1>
+
+      <div className="subtabs" role="tablist">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            className={`subtab ${tab === t.key ? 'is-active' : ''}`}
+            onClick={() => setParams(t.key === 'today' ? {} : { tab: t.key }, { replace: true })}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {current.error && <p className="error-banner">⚠️ {current.error}</p>}
+      {current.loading && <p className="muted">Indlæser…</p>}
+      {!current.loading && current.list.length === 0 && !current.error && (
+        <p className="empty">
+          {tab === 'deleted' ? 'Ingen slettede ordrer.' : 'Ingen tidligere ordrer i dag endnu.'}
+        </p>
       )}
 
       <div className="order-list">
-        {orders.map((o) => {
-          const tag = STATUS_LABEL[o.status] || STATUS_LABEL.done
+        {current.list.map((o) => {
+          const tag =
+            tab === 'deleted'
+              ? { text: 'Slettet', cls: 'tag-deleted' }
+              : STATUS_LABEL[o.status] || STATUS_LABEL.done
           return (
             <Link key={o.id} to={`/ordre/${o.id}`} className="card history-row">
               <div className="order-info">
-                <div className="order-name">{o.name || 'Ordre'}</div>
+                <div className="order-name">
+                  {o.order_no != null && <span className="order-no">#{o.order_no} </span>}
+                  {o.name || 'Ordre'}
+                </div>
                 <div className="order-phone">{o.phone}</div>
                 <div className="order-meta">
-                  Klar kl. {formatClock(o.ready_at)}
-                  {o.sms_sent_at && <> · SMS sendt kl. {formatClock(o.sms_sent_at)}</>}
+                  {tab === 'deleted' ? (
+                    <>Slettet {formatDateTime(o.deleted_at)}</>
+                  ) : (
+                    <>
+                      Klar kl. {formatClock(o.ready_at)}
+                      {o.sms_sent_at && <> · SMS sendt kl. {formatClock(o.sms_sent_at)}</>}
+                    </>
+                  )}
                 </div>
               </div>
               <div className="history-right">

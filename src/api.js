@@ -22,12 +22,18 @@ export const api = {
   },
   activeOrders: () => req('/api/orders?view=active'),
   historyOrders: () => req('/api/orders?view=history'),
+  deletedOrders: () => req('/api/orders?view=deleted'),
   order: (id) => req(`/api/orders?id=${encodeURIComponent(id)}`),
   createOrder: (body) => req('/api/orders', { method: 'POST', body: JSON.stringify(body) }),
   updateOrder: (id, body) =>
     req(`/api/orders?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteOrder: (id) =>
     req(`/api/orders?id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  restoreOrder: (id) =>
+    req(`/api/orders?id=${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ restore: true }),
+    }),
   settings: () => req('/api/settings'),
   saveSettings: (body) => req('/api/settings', { method: 'PUT', body: JSON.stringify(body) }),
   sendSms: (orderId) =>

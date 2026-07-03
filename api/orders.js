@@ -23,14 +23,24 @@ async function list(req, res) {
   let builder = sb.from('orders').select('*')
 
   if (view === 'history') {
-    // Dagens ordrer der ikke længere er aktive – nyeste ordrenummer øverst.
+    // Dagens ordrer der ikke længere er aktive (og ikke slettede) – nyeste øverst.
     builder = builder
       .gte('created_at', copenhagenDayStartISO())
       .neq('status', 'active')
+      .is('deleted_at', null)
       .order('order_no', { ascending: false })
+  } else if (view === 'deleted') {
+    // Slettede ordrer – alle (også fra tidligere dage), nyeste sletning øverst.
+    builder = builder
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false })
+      .limit(500)
   } else {
-    // Aktive ordrer – nyeste ordrenummer øverst.
-    builder = builder.eq('status', 'active').order('order_no', { ascending: false })
+    // Aktive ordrer (ikke slettede) – nyeste ordrenummer øverst.
+    builder = builder
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .order('order_no', { ascending: false })
   }
 
   const { data, error } = await builder
@@ -79,6 +89,7 @@ async function update(req, res) {
   const body = await readJson(req)
 
   const patch = {}
+  if (body.restore === true) patch.deleted_at = null // gendan en slettet ordre
   if (body.status !== undefined) {
     if (!['active', 'sent', 'done', 'cancelled'].includes(body.status))
       throw httpError(400, 'Ugyldig status')
@@ -106,7 +117,12 @@ async function update(req, res) {
 async function remove(req, res) {
   const id = query(req).get('id')
   if (!id) throw httpError(400, 'Mangler ordre-id')
-  const { error } = await getSupabase().from('orders').delete().eq('id', id)
+  // Blød sletning: behold rækken, men markér som slettet, så ordren stadig
+  // kan findes under Historik → Slettet (og evt. gendannes).
+  const { error } = await getSupabase()
+    .from('orders')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
   if (error) throw httpError(500, error.message)
   return sendJson(res, 200, { ok: true })
 }
