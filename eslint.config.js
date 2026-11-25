@@ -25,8 +25,8 @@ export default defineConfig([
     },
   },
   {
-    // Backend (serverless functions) + build-konfig kører i Node.
-    files: ['api/**/*.js', '*.config.js'],
+    // Backend (serverless functions), databasen, testene og build-konfig kører i Node.
+    files: ['api/**/*.js', 'db/**/*.js', 'test/**/*.js', 'scripts/**/*.mjs', '*.config.js'],
     languageOptions: { globals: globals.node },
   },
 ])

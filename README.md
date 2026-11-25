@@ -26,21 +26,32 @@ beskeden afsendes via GatewayAPI.
 - **Frontend:** Vite + React 19 + React Router (SPA)
 - **Backend:** Serverless functions i `/api` (kører som Vercel Functions i prod, og
   mountes lokalt af en lille Vite-plugin så `npm run dev` "bare virker")
-- **Database:** Supabase (Postgres)
+- **Database:** SQLite hos [Turso](https://turso.tech) (Irland), oprettet gennem Vercel.
+  Tabellerne står i [`db/migrations`](db/migrations) og oprettes med `npm run db:migrate`.
+  Serveren taler med Turso over HTTPS (`api/_lib/db.js`); datafunktionerne ligger i
+  `api/_lib/store.js`.
+- **Login:** [Better Auth](https://better-auth.com) med e-mail og adgangskode
+  (`api/_lib/auth-engine.js` og `api/_lib/auth.js`). Ingen kan oprette sig selv; brugere og nye
+  adgangskoder laves med `npm run user -- navn@eksempel.dk`. Sessionen ligger i en HttpOnly-cookie.
+- **Adgang:** Der er ingen RLS: hver fil i `/api` (undtagen login) kalder `requireUser` først.
+  `test/guards.test.js` tjekker det.
 - **SMS:** [GatewayAPI](https://gatewayapi.com)
 
-Supabase service-nøgle og GatewayAPI-token bruges **kun server-side** i `/api` og når
-aldrig browseren.
+Databasens nøgle, `BETTER_AUTH_SECRET` og GatewayAPI-token bruges **kun server-side** i `/api`
+og når aldrig browseren.
+
+Indtil november 2026 lå databasen og login hos Supabase (`schema.sql` er det gamle skema).
 
 ## Opsætning
 
-### 1. Supabase
+### 1. Database og login
 
-1. Opret et projekt på [supabase.com](https://supabase.com).
-2. Åbn **SQL Editor** og kør indholdet af [`schema.sql`](schema.sql).
-3. Find under **Project Settings → API**:
-   - `Project URL` → `SUPABASE_URL`
-   - `service_role`-nøglen (hemmelig) → `SUPABASE_SERVICE_ROLE_KEY`
+1. I produktion sætter Vercels Turso-integration `TURSO_DATABASE_URL` og `TURSO_AUTH_TOKEN`.
+   Lokalt kan `TURSO_DATABASE_URL` være en fil (`file:C:/sti/smsalert.db`).
+2. Opret tabellerne: `npm run db:migrate`.
+3. Sæt `BETTER_AUTH_SECRET` til en lang tilfældig værdi.
+4. Opret en bruger: `npm run user -- navn@eksempel.dk` (adgangskoden skrives bagefter, mindst 6 tegn).
+   Samme kommando giver en eksisterende bruger en ny adgangskode og logger dens enheder ud.
 
 ### 2. GatewayAPI
 
@@ -63,14 +74,20 @@ npm run dev
 # åbn http://localhost:5173
 ```
 
+Sæt `SMS_DRY_RUN=1` i `.env` lokalt, så "Send SMS" aldrig sender en rigtig SMS (det virker aldrig
+på Vercel). Testene (`npm test`) kan heller ikke sende SMS.
+
 ## Deploy til Vercel
 
-1. Importér projektet i Vercel (framework registreres som Vite automatisk).
-2. Tilføj de samme miljøvariabler under **Settings → Environment Variables**:
-   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GATEWAYAPI_TOKEN`, `GATEWAYAPI_SENDER`,
-   `DEFAULT_COUNTRY_CODE`.
-3. Deploy. Filerne i `/api` bliver automatisk til serverless functions, og
-   [`vercel.json`](vercel.json) sørger for at klient-ruter (fx `/historik`) virker ved direkte besøg.
+1. Projektet `smsalert` udrulles af sig selv fra `main` (domænet er `www.smsalert.dk`).
+   **Et push til `main` er en ny udgave i produktion: kun efter butikken er lukket.**
+2. Miljøvariabler under **Settings → Environment Variables**: `TURSO_DATABASE_URL` og
+   `TURSO_AUTH_TOKEN` (fra Turso-integrationen), `BETTER_AUTH_SECRET`, `GATEWAYAPI_TOKEN`,
+   `GATEWAYAPI_SENDER` og `DEFAULT_COUNTRY_CODE`.
+3. Funktionerne kører i `dub1` (Irland) ved siden af databasen: `regions` i
+   [`vercel.json`](vercel.json) og projektets standardregion. [`vercel.json`](vercel.json) sørger
+   også for, at klient-ruter (fx `/historik`) virker ved direkte besøg.
+4. CI (`.github/workflows/ci.yml`) kører lint, test og build ved hvert push.
 
 ## SMS-skabelon
 

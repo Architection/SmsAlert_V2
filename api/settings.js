@@ -1,20 +1,17 @@
-import { getSupabase } from './_lib/supabase.js'
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
 import { requireUser } from './_lib/auth.js'
+import { getSettings, updateSettings } from './_lib/store.js'
+import { now } from './_lib/db.js'
 
 async function get(req, res) {
-  const { data, error } = await getSupabase()
-    .from('settings')
-    .select('*')
-    .eq('id', 1)
-    .single()
-  if (error) throw httpError(500, error.message)
-  return sendJson(res, 200, data)
+  const settings = await getSettings()
+  if (!settings) throw httpError(500, 'Kunne ikke hente indstillinger')
+  return sendJson(res, 200, settings)
 }
 
 async function put(req, res) {
   const body = await readJson(req)
-  const patch = { updated_at: new Date().toISOString() }
+  const patch = { updated_at: now() }
   if (body.sms_template !== undefined) {
     if (!String(body.sms_template).trim()) throw httpError(400, 'SMS-teksten må ikke være tom')
     patch.sms_template = String(body.sms_template)
@@ -31,14 +28,9 @@ async function put(req, res) {
     patch.next_order_no = n
   }
 
-  const { data, error } = await getSupabase()
-    .from('settings')
-    .update(patch)
-    .eq('id', 1)
-    .select()
-    .single()
-  if (error) throw httpError(500, error.message)
-  return sendJson(res, 200, data)
+  const settings = await updateSettings(patch)
+  if (!settings) throw httpError(500, 'Kunne ikke gemme indstillinger')
+  return sendJson(res, 200, settings)
 }
 
 export default withErrors(async (req, res) => {

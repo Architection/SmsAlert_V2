@@ -32,11 +32,18 @@ export function renderTemplate(template, { leadMinutes, readyAt, name, orderNo }
 
 // Send via GatewayAPI REST (https://gatewayapi.com/docs/apis/rest/).
 export async function sendSms({ to, message, sender }) {
-  const token = process.env.GATEWAYAPI_TOKEN
-  if (!token) throw httpError(500, 'GATEWAYAPI_TOKEN mangler i .env')
-
   const msisdn = toMsisdn(to)
   const senderName = (sender || process.env.GATEWAYAPI_SENDER || 'SMS').slice(0, 11)
+
+  // Tør kørsel: kun lokalt (aldrig på Vercel), så en kopi af rigtige data kan prøves, uden at
+  // kunderne får en SMS.
+  if (process.env.SMS_DRY_RUN === '1' && process.env.VERCEL !== '1') {
+    console.log('[sms] Tør kørsel: ingen SMS sendt.')
+    return { msisdn, providerIds: [], dryRun: true }
+  }
+
+  const token = process.env.GATEWAYAPI_TOKEN
+  if (!token) throw httpError(500, 'GATEWAYAPI_TOKEN mangler i .env')
 
   const res = await fetch('https://gatewayapi.com/rest/mtsms', {
     method: 'POST',

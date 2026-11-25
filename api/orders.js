@@ -1,86 +1,57 @@
-import { getSupabase } from './_lib/supabase.js'
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
 import { requireUser } from './_lib/auth.js'
-import { copenhagenDayStartISO } from './_lib/time.js'
 import { toMsisdn } from './_lib/sms.js'
+import {
+  ORDER_STATUSES,
+  createOrder,
+  getOrder,
+  listOrders,
+  softDeleteOrder,
+  updateOrder,
+} from './_lib/store.js'
 
 function query(req) {
   return new URL(req.url, 'http://x').searchParams
 }
 
+function isoOrFail(value, message) {
+  const t = new Date(value)
+  if (!value || Number.isNaN(t.getTime())) throw httpError(400, message)
+  return t.toISOString()
+}
+
 async function list(req, res) {
   const q = query(req)
   const id = q.get('id')
-  const sb = getSupabase()
 
   if (id) {
-    const { data, error } = await sb.from('orders').select('*').eq('id', id).single()
-    if (error) throw httpError(404, 'Ordre blev ikke fundet')
-    return sendJson(res, 200, data)
+    const order = await getOrder(id)
+    if (!order) throw httpError(404, 'Ordre blev ikke fundet')
+    return sendJson(res, 200, order)
   }
 
-  const view = q.get('view') || 'active'
-  let builder = sb.from('orders').select('*')
-
-  if (view === 'history') {
-    // Dagens ordrer der ikke længere er aktive (og ikke slettede) – nyeste øverst.
-    builder = builder
-      .gte('created_at', copenhagenDayStartISO())
-      .neq('status', 'active')
-      .is('deleted_at', null)
-      .order('order_no', { ascending: false })
-  } else if (view === 'deleted') {
-    // Slettede ordrer – alle (også fra tidligere dage), nyeste sletning øverst.
-    builder = builder
-      .not('deleted_at', 'is', null)
-      .order('deleted_at', { ascending: false })
-      .limit(500)
-  } else {
-    // Aktive ordrer (ikke slettede) – nyeste ordrenummer øverst.
-    builder = builder
-      .eq('status', 'active')
-      .is('deleted_at', null)
-      .order('order_no', { ascending: false })
-  }
-
-  const { data, error } = await builder
-  if (error) throw httpError(500, error.message)
-  return sendJson(res, 200, data)
+  // active (standard) | history (dagens afsluttede) | deleted (slettede)
+  return sendJson(res, 200, await listOrders(q.get('view') || 'active'))
 }
 
 async function create(req, res) {
   const body = await readJson(req)
   const phone = (body.phone || '').trim()
-  const readyAt = body.ready_at
   const leadMinutes = Number(body.lead_minutes)
 
   if (!phone) throw httpError(400, 'Mobilnummer er påkrævet')
   toMsisdn(phone) // valider tidligt
-  if (!readyAt || isNaN(new Date(readyAt).getTime()))
-    throw httpError(400, 'Ugyldigt færdig-tidspunkt')
+  const readyAt = isoOrFail(body.ready_at, 'Ugyldigt færdig-tidspunkt')
   if (!Number.isFinite(leadMinutes) || leadMinutes < 0)
     throw httpError(400, 'Ugyldigt antal minutter')
 
-  const sb = getSupabase()
-
-  // Tildel det næste fortløbende ordrenummer atomisk (ruller tælleren én frem).
-  const { data: orderNo, error: nErr } = await sb.rpc('next_order_number')
-  if (nErr) throw httpError(500, 'Kunne ikke tildele ordrenummer: ' + nErr.message)
-
-  const { data, error } = await sb
-    .from('orders')
-    .insert({
-      order_no: orderNo,
-      phone,
-      name: (body.name || '').trim() || null,
-      lead_minutes: Math.round(leadMinutes),
-      ready_at: new Date(readyAt).toISOString(),
-    })
-    .select()
-    .single()
-
-  if (error) throw httpError(500, error.message)
-  return sendJson(res, 201, data)
+  const order = await createOrder({
+    phone,
+    name: (body.name || '').trim() || null,
+    leadMinutes: Math.round(leadMinutes),
+    readyAt,
+  })
+  return sendJson(res, 201, order)
 }
 
 async function update(req, res) {
@@ -91,8 +62,7 @@ async function update(req, res) {
   const patch = {}
   if (body.restore === true) patch.deleted_at = null // gendan en slettet ordre
   if (body.status !== undefined) {
-    if (!['active', 'sent', 'done', 'cancelled'].includes(body.status))
-      throw httpError(400, 'Ugyldig status')
+    if (!ORDER_STATUSES.includes(body.status)) throw httpError(400, 'Ugyldig status')
     patch.status = body.status
   }
   if (body.name !== undefined) patch.name = (body.name || '').trim() || null
@@ -100,18 +70,18 @@ async function update(req, res) {
     toMsisdn(body.phone)
     patch.phone = String(body.phone).trim()
   }
-  if (body.lead_minutes !== undefined) patch.lead_minutes = Math.round(Number(body.lead_minutes))
-  if (body.ready_at !== undefined) patch.ready_at = new Date(body.ready_at).toISOString()
+  if (body.lead_minutes !== undefined) {
+    const n = Math.round(Number(body.lead_minutes))
+    if (!Number.isFinite(n)) throw httpError(400, 'Ugyldigt antal minutter')
+    patch.lead_minutes = n
+  }
+  if (body.ready_at !== undefined)
+    patch.ready_at = isoOrFail(body.ready_at, 'Ugyldigt færdig-tidspunkt')
   if (Object.keys(patch).length === 0) throw httpError(400, 'Ingen felter at opdatere')
 
-  const { data, error } = await getSupabase()
-    .from('orders')
-    .update(patch)
-    .eq('id', id)
-    .select()
-    .single()
-  if (error) throw httpError(500, error.message)
-  return sendJson(res, 200, data)
+  const order = await updateOrder(id, patch)
+  if (!order) throw httpError(404, 'Ordre blev ikke fundet')
+  return sendJson(res, 200, order)
 }
 
 async function remove(req, res) {
@@ -119,11 +89,7 @@ async function remove(req, res) {
   if (!id) throw httpError(400, 'Mangler ordre-id')
   // Blød sletning: behold rækken, men markér som slettet, så ordren stadig
   // kan findes under Historik → Slettet (og evt. gendannes).
-  const { error } = await getSupabase()
-    .from('orders')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw httpError(500, error.message)
+  await softDeleteOrder(id)
   return sendJson(res, 200, { ok: true })
 }
 

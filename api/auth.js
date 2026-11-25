@@ -1,5 +1,6 @@
 import { readJson, sendJson, withErrors, httpError } from './_lib/http.js'
-import { signInWithPassword, getAuthedUser, clearSessionCookies } from './_lib/auth.js'
+import { signInWithPassword, getAuthedUser, signOut } from './_lib/auth.js'
+import { MIN_PASSWORD_LENGTH } from './_lib/auth-engine.js'
 
 function publicUser(user) {
   return user ? { id: user.id, email: user.email } : null
@@ -9,13 +10,14 @@ function readCredentials(body) {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   if (!email || !email.includes('@')) throw httpError(400, 'Ugyldig e-mail')
-  if (password.length < 6) throw httpError(400, 'Adgangskoden skal være mindst 6 tegn')
+  if (password.length < MIN_PASSWORD_LENGTH)
+    throw httpError(400, `Adgangskoden skal være mindst ${MIN_PASSWORD_LENGTH} tegn`)
   return { email, password }
 }
 
 async function login(req, res) {
   const { email, password } = readCredentials(await readJson(req))
-  const user = await signInWithPassword(res, email, password)
+  const user = await signInWithPassword(req, res, email, password)
   return sendJson(res, 200, { user: publicUser(user) })
 }
 
@@ -25,7 +27,7 @@ async function me(req, res) {
 }
 
 async function logout(req, res) {
-  clearSessionCookies(res)
+  await signOut(req, res)
   return sendJson(res, 200, { ok: true })
 }
 
@@ -33,6 +35,7 @@ function requirePost(req) {
   if (req.method !== 'POST') throw httpError(405, `Metode ${req.method} ikke tilladt`)
 }
 
+// Login-endpointet er det eneste i api/ uden requireUser: det er her, man logger ind.
 export default withErrors(async (req, res) => {
   const action = new URL(req.url, 'http://x').searchParams.get('action')
   switch (action) {
